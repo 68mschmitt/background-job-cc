@@ -2,11 +2,11 @@
 
 public interface ITriggerService
 {
-	delegate void FUnsubscribe();
+    delegate void FUnsubscribe();
 
-	delegate Task FExecuteAsync(CancellationToken cancellationToken);
+    delegate Task FExecuteAsync(CancellationToken cancellationToken);
 
-	FUnsubscribe Subscribe(FExecuteAsync executeAsync);
+    FUnsubscribe Subscribe(FExecuteAsync executeAsync);
 
-	void Unsubscribe(FExecuteAsync executeAsync);
+    void Unsubscribe(FExecuteAsync executeAsync);
 }
