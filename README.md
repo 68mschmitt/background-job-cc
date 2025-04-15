@@ -58,7 +58,7 @@ The solution is implemented as a .NET Console Application and simulates processi
 ---
 
 ### High Level Design
-![Flow Chart](./Diagrams/High-level-system-design.PNG)
+![Flow Chart](Diagrams/High-level-system-design.PNG)
 
 ---
 
