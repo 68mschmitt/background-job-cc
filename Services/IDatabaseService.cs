@@ -1,5 +1,6 @@
 ﻿namespace BackgroundJobCodingChallenge.Services;
 
+/// Straight forward implementation of a CRUD interface
 public interface IDatabaseService
 {
     delegate IQueryable<TResult> FCreateQuery<TEntity, TResult>(IQueryable<TEntity> query);

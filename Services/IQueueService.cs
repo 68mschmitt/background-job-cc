@@ -1,5 +1,6 @@
 ﻿namespace BackgroundJobCodingChallenge.Services;
 
+/// When processing bulk actions, we want to utilize a queue as to batch the processes in parallel
 public interface IQueueService
 {
     delegate void FUnsubscribe();
