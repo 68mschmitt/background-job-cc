@@ -13,13 +13,18 @@ public class CustomerActionOrchestrator(IQueueService queue)
     {
         foreach (var tenantId in _tenants)
         {
-            for (int i = 0; i < 100; i++) // Simulate 100 customers
+            var actionNames = new string[] { "EmailCustomer", "ApplyCredits" };
+            foreach (var actionName in actionNames)
             {
-                await _queue.QueueMessageAsync((int)QueueIds.CustomerActions, new CustomerActionMessage
+                for (int i = 0; i < 100; i++) // Simulate 100 customers
                 {
-                    TenantId = tenantId,
-                    CustomerId = Guid.NewGuid()
-                }, ct);
+                    await _queue.QueueMessageAsync((int)QueueIds.CustomerActions, new CustomerActionMessage
+                    {
+                        TenantId = tenantId,
+                        CustomerId = Guid.NewGuid(),
+                        ActionName = actionName
+                    }, ct);
+                }
             }
         }
     }

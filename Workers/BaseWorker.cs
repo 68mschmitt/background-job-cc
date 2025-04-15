@@ -16,31 +16,13 @@ public abstract class BaseWorker<TState, TMessage>(
     private readonly ITriggerService _trigger = trigger;
     private readonly string _workerName = workerName;
 
-    public async Task ProcessMessageAsync(TMessage message, CancellationToken ct)
-    {
-        await ExecuteWorkerLogicAsync(message, ct);
-    }
-
-    public async Task ExecuteAsync(CancellationToken ct)
-    {
-        await ExecuteWorkerLogicAsync(null, ct);
-    }
-
     public abstract Task ExecuteWorkerLogicAsync(TMessage? message, CancellationToken ct);
+
+    public abstract Task LoadStateAsync();
 
     public Task QueueAsync(int queueId, TMessage message, CancellationToken ct)
     {
         return _queue.QueueMessageAsync(queueId, message, ct);
-    }
-
-    public void RegisterQueue(int queueId)
-    {
-        _queue.SubscribeToMessages<TMessage>(queueId, ProcessMessageAsync);
-    }
-
-    public void RegisterTrigger()
-    {
-        _trigger.Subscribe(ExecuteAsync);
     }
 }
 

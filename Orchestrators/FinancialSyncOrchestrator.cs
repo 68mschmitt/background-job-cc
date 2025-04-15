@@ -7,6 +7,8 @@ using BackgroundJobCodingChallenge.Workers;
 
 namespace BackgroundJobCodingChallenge.Orchestrators;
 
+// Meant to handle the cursor state tracking
+// As well as queue the individual background processes for the financial data sync
 public class FinancialSyncOrchestrator(IDatabaseService db, IQueueService queue)
 {
     private readonly IDatabaseService _db = db;
@@ -18,7 +20,7 @@ public class FinancialSyncOrchestrator(IDatabaseService db, IQueueService queue)
         foreach (var tenantId in _tenants)
         {
             // Get the record
-            var record = await _db.GetAsync<WorkerStateRecord, WorkerStateRecord>(query =>
+            var record = await _db.GetAsync<FinancialSyncState, FinancialSyncState>(query =>
                 query.Where(r => r.WorkerName == "FinancialSyncWorker" && r.TenantId == tenantId));
 
             // Deserialize the record
@@ -48,7 +50,7 @@ public class FinancialSyncOrchestrator(IDatabaseService db, IQueueService queue)
                 LastSyncedTransactionId = newTransactionIds.LastOrDefault(state.LastSyncedTransactionId)
             };
 
-            var updatedRecord = new WorkerStateRecord
+            var updatedRecord = new FinancialSyncState
             {
                 WorkerName = "FinancialSyncWorker",
                 TenantId = tenantId,
@@ -61,6 +63,7 @@ public class FinancialSyncOrchestrator(IDatabaseService db, IQueueService queue)
 
     private static List<int> GetMockTransactions(int lastId)
     {
-        return [.. Enumerable.Range(lastId + 1, 5)]; // Simulate 5 new txns per run
+        // Mock 5 processed rows per transaction
+        return [.. Enumerable.Range(lastId + 1, 5)];
     }
 }

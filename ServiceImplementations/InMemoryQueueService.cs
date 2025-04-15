@@ -1,11 +1,13 @@
 namespace BackgroundJobCodingChallenge.ServiceImplementations;
 
 using System.Collections.Concurrent;
-using System.Reflection;
+using BackgroundJobCodingChallenge.Messages;
 using BackgroundJobCodingChallenge.Services;
 
 public class InMemoryQueueService : IQueueService, IDisposable
 {
+    private const int _MAX_CONCURRENT_COUNT = 50;
+
     private readonly ConcurrentQueue<(int queueId, object message)> _messageQueue = new();
     private readonly ConcurrentDictionary<(int queueId, Type messageType), object> _handlers = new();
     private readonly CancellationTokenSource _cts = new();
@@ -51,43 +53,44 @@ public class InMemoryQueueService : IQueueService, IDisposable
         }
     }
 
+    /// This runs each process one by one
+    /// It is not great for a high throughput system
+    /// There are a couple improvements that come to mind for production use
+    /// 1. Parallelize the tasks (handlers) to take advantage of more threads
+    /// 2. Segregate the long running processes from the high throughput processes and increase the batch size based on the estimated runtime
     private async Task ProcessMessagesLoopAsync()
     {
-        Console.WriteLine("ProcessQueueStarted");
         while (!_cts.Token.IsCancellationRequested)
         {
-            Console.WriteLine("QueueCalledAgain");
             if (_messageQueue.TryDequeue(out var queued))
             {
                 var (queueId, message) = queued;
                 var messageType = message.GetType();
                 var key = (queueId, messageType);
-                Console.WriteLine($"{queueId}:{message}");
 
                 if (_handlers.TryGetValue(key, out var handlerObj))
                 {
-                    var method = typeof(InMemoryQueueService)
-                        .GetMethod(nameof(InvokeHandler), BindingFlags.NonPublic | BindingFlags.Instance)!
-                        .MakeGenericMethod(messageType);
 
-                    await (Task)method.Invoke(this, [handlerObj, message, _cts.Token])!;
+                    if (messageType.ToString().Contains("CustomerActionMessage"))
+                    {
+                        var handler = (IQueueService.FProcessAsync<CustomerActionMessage>)handlerObj;
+                        await handler((CustomerActionMessage)message, _cts.Token);
+                    }
+                    else if (messageType.ToString().Contains("FinancialSyncMessage"))
+                    {
+                        var handler = (IQueueService.FProcessAsync<FinancialSyncMessage>)handlerObj;
+                        await handler((FinancialSyncMessage)message, _cts.Token);
+                    }
+                    else if (messageType.ToString().Contains("EmployeeUploadMessage"))
+                    {
+                        var handler = (IQueueService.FProcessAsync<EmployeeUploadMessage>)handlerObj;
+                        await handler((EmployeeUploadMessage)message, _cts.Token);
+                    }
                 }
+
+                if (_messageQueue.IsEmpty) await Task.Delay(100); // throttle loop
             }
-
-            await Task.Delay(10); // throttle loop
         }
-        Console.WriteLine("Not processing anymore");
-    }
-
-    private static async Task InvokeHandler<TMessage>(
-        object handlerObj,
-        object rawMessage,
-        CancellationToken ct
-    )
-    {
-        var handler = (IQueueService.FProcessAsync<TMessage>)handlerObj;
-        var msg = (TMessage)rawMessage;
-        await handler(msg, ct);
     }
 
     public void Dispose()

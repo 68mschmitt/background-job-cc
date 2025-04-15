@@ -11,14 +11,11 @@ public class InMemoryTriggerService : ITriggerService
     public ITriggerService.FUnsubscribe Subscribe(ITriggerService.FExecuteAsync executeAsync)
     {
         _subscribers.Add(executeAsync);
-        Console.WriteLine($"{_subscribers.Count} : amount of subscribers");
-
         return () => Unsubscribe(executeAsync);
     }
 
     public void Unsubscribe(ITriggerService.FExecuteAsync executeAsync)
     {
-        // Cannot remove from ConcurrentBag, so simulate by re-adding everything except the target
         var remaining = _subscribers.Where(s => s != executeAsync).ToList();
 
         _subscribers.Clear(); // Not ideal, but okay for in-memory mock
@@ -26,9 +23,7 @@ public class InMemoryTriggerService : ITriggerService
             _subscribers.Add(sub);
     }
 
-    /// <summary>
     /// Manually invoke all subscribed trigger callbacks.
-    /// </summary>
     public async Task FireAsync(CancellationToken cancellationToken = default)
     {
         foreach (var subscriber in _subscribers)
